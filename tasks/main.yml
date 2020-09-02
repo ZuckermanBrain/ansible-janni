@@ -1,2 +1,67 @@
 ---
 # tasks file for app-janni
+
+- name: Check for installation of Anaconda
+  become: yes
+  stat:
+    path: '{{ janni_install_dir }}/bin/conda'
+  changed_when: false
+  register: anaconda_conda_binary
+
+- when: not anaconda_conda_binary.stat.exists
+  block:
+    - name: Download Anaconda installer.
+      become: yes
+      get_url:
+        url: '{{anaconda_installer_url}}'
+        dest: /tmp/{{anaconda_installer_sh}}
+        timeout: '{{anaconda_timeout_seconds}}'
+        checksum: '{{anaconda_checksum}}'
+        mode: 0755
+
+    - name: Run Anaconda installer.
+      become: yes
+      command: bash /tmp/{{anaconda_installer_sh}} -b -f -p {{janni_install_dir}}
+
+  always:
+    - name: Delete Anaconda installer.
+      become: yes
+      file:
+        path: /tmp/{{anaconda_installer_sh}}
+        state: absent
+
+- name: Add conda base environment file.
+  become: yes
+  copy:
+    content: '{{ anaconda_base_env | to_nice_yaml }}'
+    dest: /tmp/anaconda-base.yml
+  when: anaconda_base_env is defined
+
+# imagecodecs-lite consistently fails since its setup scripts depend upong
+# Cython and Numpy being installed before it will work with a pip install
+- name: Install Cython and Numpy first to work around imagecodecs-lite dependency hell issue
+  become: yes
+  shell: |
+    source {{janni_install_dir}}/bin/activate
+    conda install pip=20.2.2=py36_0
+    pip install numpy==1.14.5
+    pip install cython==0.29.21
+  when: anaconda_base_env is defined
+
+- name: Install additional packages to universal install / add default packages to shared package cache.
+  become: yes
+  command: '{{janni_install_dir}}/bin/conda env update -f=/tmp/anaconda-base.yml'
+  when: anaconda_base_env is defined
+
+- name: Remove conda base environment file.
+  become: yes
+  file:
+    path: /tmp/anaconda-base.yml
+    state: absent
+  when: anaconda_base_env is defined
+
+- name: Add in janni module
+  template:
+    src: janni.lua.j2
+    dest: "{{ janni_module_dir }}/janni.lua"
+  when: janni_module and janni_module_dir is defined

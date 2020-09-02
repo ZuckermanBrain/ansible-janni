@@ -1,0 +1,18 @@
+local help_message = [[
+janni
+
+This module loads janni
+]]
+
+help(help_message,"\n")
+
+whatis("Name: janni ")
+whatis("URL: http://sphire.mpg.de/wiki/doku.php?id=janni")
+
+{% if sbgrid_installed %}
+unload ("sbgrid", "biogrids")
+{% endif %}
+
+prepend_path("PATH","{{ janni_install_dir }}/condabin")
+execute {cmd="source {{ janni_install_dir }}/bin/activate", modeA={"load"}}
+execute {cmd="source {{ janni_install_dir }}/bin/deactivate", modeA={"unload"}}
