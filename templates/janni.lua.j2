@@ -13,6 +13,7 @@ whatis("URL: http://sphire.mpg.de/wiki/doku.php?id=janni")
 unload ("sbgrid", "biogrids")
 {% endif %}
 
-prepend_path("PATH","{{ janni_install_dir }}/condabin")
-execute {cmd="source {{ janni_install_dir }}/bin/activate", modeA={"load"}}
-execute {cmd="source {{ janni_install_dir }}/bin/deactivate", modeA={"unload"}}
+prepend_path("PATH","{{ janni_install_dir }}/bin")
+remove_path("PATH","{{ janni_install_dir }}/condabin")
+execute {cmd="source {{ janni_install_dir }}/etc/profile.d/conda.sh", modeA={"load"}}
+execute {cmd="source {{ janni_install_dir }}/bin/deinit-bash.sh", modeA={"unload"}}

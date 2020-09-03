@@ -35,31 +35,38 @@
   copy:
     content: '{{ anaconda_base_env | to_nice_yaml }}'
     dest: /tmp/anaconda-base.yml
-  when: anaconda_base_env is defined
-
-# imagecodecs-lite consistently fails since its setup scripts depend upong
-# Cython and Numpy being installed before it will work with a pip install
-- name: Install Cython and Numpy first to work around imagecodecs-lite dependency hell issue
-  become: yes
-  shell: |
-    source {{janni_install_dir}}/bin/activate
-    conda install pip=20.2.2=py36_0
-    pip install numpy==1.14.5
-    pip install cython==0.29.21
-  when: anaconda_base_env is defined
+  when: anaconda_base_env is defined and not anaconda_conda_binary.stat.exists
 
 - name: Install additional packages to universal install / add default packages to shared package cache.
   become: yes
-  command: '{{janni_install_dir}}/bin/conda env update -f=/tmp/anaconda-base.yml'
-  when: anaconda_base_env is defined
+  shell: |
+    source {{janni_install_dir}}/bin/activate
+    conda env update -f=/tmp/anaconda-base.yml
+  when: anaconda_base_env is defined and not anaconda_conda_binary.stat.exists
+
+# imagecodecs-lite consistently fails since its setup scripts depend upong
+# Cython and Numpy being installed before it will work with a pip install
+- name: Workaround for imagecodecs-lite dependency hell issue
+  become: yes
+  shell: |
+    source {{janni_install_dir}}/bin/activate
+    pip install numpy==1.14.5
+    pip install cython==0.29.21
+    pip install {% for dep in janni_pip_dependencies %}{{ dep }} {% endfor %}
+  when: janni_pip_dependencies is defined and anaconda_base_env is defined and not anaconda_conda_binary.stat.exists
 
 - name: Remove conda base environment file.
   become: yes
   file:
     path: /tmp/anaconda-base.yml
     state: absent
-  when: anaconda_base_env is defined
+  when: anaconda_base_env is defined and not anaconda_conda_binary.stat.exists
 
+- name: Add in function to unload conda module
+  copy:
+    src: deinit-bash.sh
+    dest: "{{ janni_install_dir }}/bin/deinit-bash.sh"
+  when: janni_module 
 - name: Add in janni module
   template:
     src: janni.lua.j2
