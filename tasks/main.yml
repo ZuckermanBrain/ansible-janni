@@ -68,6 +68,7 @@
     dest: "{{ janni_install_dir }}/bin/deinit-bash.sh"
   when: janni_module 
 - name: Add in janni module
+  tags: ["janni_module_update"]
   template:
     src: janni.lua.j2
     dest: "{{ janni_module_dir }}/janni.lua"

@@ -10,7 +10,7 @@ whatis("Name: janni ")
 whatis("URL: http://sphire.mpg.de/wiki/doku.php?id=janni")
 
 {% if sbgrid_installed %}
-unload ("sbgrid", "biogrids")
+conflict("sbgrid", "biogrids")
 {% endif %}
 
 prepend_path("PATH","{{ janni_install_dir }}/bin")
